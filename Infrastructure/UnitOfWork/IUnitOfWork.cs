@@ -8,8 +8,6 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Request> Requests { get; }
     IGenericRepository<Instructor> Instructors { get; }
     IGenericRepository<Student> Students { get; }
-   
-
     Task<int> Complete();
 
 }

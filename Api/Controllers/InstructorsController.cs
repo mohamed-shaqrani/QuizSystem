@@ -1,21 +1,23 @@
 ﻿using Core.Models;
 using Infrastructure.Data;
+using Infrastructure.UnitOfWork;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 public class InstructorsController : ControllerBase
 {
-    private readonly AppDbContext _context;
-    public InstructorsController(AppDbContext dbContext)
+    private readonly IUnitOfWork _unitOfWork ;
+    public InstructorsController(IUnitOfWork unitOfWork)
     {
-        _context = dbContext;
+        _unitOfWork = unitOfWork;
     }
     [HttpGet]
-    public List<Instructor> GetAll()
+    public async Task<List<Instructor>> GetAll()
     {
-        return _context.Instructors.ToList();
+        return await _unitOfWork.Instructors.GetAllQueryable().ToListAsync();
     }
 }

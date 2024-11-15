@@ -1,13 +1,15 @@
 ﻿using Core.Models;
 using Infrastructure.Data;
 using Infrastructure.UnitOfWork;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
-[Route("api/[controller]")]
+[Route("api/instructors")]
 [ApiController]
+[AllowAnonymous]
 public class InstructorsController : ControllerBase
 {
     private readonly IUnitOfWork _unitOfWork ;

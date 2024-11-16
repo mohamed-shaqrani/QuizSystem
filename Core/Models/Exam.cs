@@ -12,6 +12,7 @@ public class Exam :BaseModel
     public ExamType ExamType { get; set; }
     public int NumberOfQuestions { get; set; }
     public bool IsManualAssignment { get; set; }
+    public Course Course { get; set; }
     public ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();
     public ICollection<ExamStudent> ExamStudents { get; set; } = new List<ExamStudent>(); 
 

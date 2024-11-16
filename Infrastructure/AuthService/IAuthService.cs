@@ -3,5 +3,7 @@
 namespace Infrastructure.AuthService;
 public interface IAuthService
 {
-    public Task<AuthModel> RegisterAsync(RegisterModel model);
+    Task<AuthModel> RegisterAsync(RegisterModel model);
+    Task<AuthModel> GetTokenAsync(TokenRequestModel model);
+
 }

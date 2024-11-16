@@ -3,7 +3,7 @@ using Infrastructure.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
-[Route("api/[controller]")]
+[Route("api/account")]
 [ApiController]
 public class AccountController : ControllerBase
 {
@@ -16,15 +16,26 @@ public class AccountController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> RegisterStudent(RegisterModel model)
     {
-        var auth = await _authService.RegisterAsync(model);
-        if (auth.Message != null)
-        {
-            return BadRequest(auth.Message);
-        }
-        else
-        {
-            return Ok(auth);
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
 
+        var result = await _authService.RegisterAsync(model);
+        if (!result.IsAuthenticated)
+            return BadRequest(result.Message);
+        else
+            return Ok(result);
+    }
+    [HttpGet]
+    public async Task<ActionResult> Login([FromQuery] TokenRequestModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
         }
+        var result = await _authService.GetTokenAsync(model);
+        if (!result.IsAuthenticated)
+            return BadRequest(result.Message);
+        else
+            return Ok(result);
     }
 }

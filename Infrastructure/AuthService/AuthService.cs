@@ -110,4 +110,25 @@ public class AuthService : IAuthService
             signingCredentials: signingCredentials);
         return symtricSecruityToken;
     }
+
+    public async Task<AuthModel> GetTokenAsync(TokenRequestModel model)
+    {
+        var authModel = new AuthModel();
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user is null || !await _userManager.CheckPasswordAsync(user, model.Password)) {
+            authModel.Message = $"Email or Password is incorrect ";
+            return authModel;
+        }
+        authModel.IsAuthenticated = true;
+        var jwtSecurityToken = await CreateJwtToken(user);
+        authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+        authModel.Email = user.Email;
+        authModel.UserName = user.UserName;
+        authModel.ExpiresOn = jwtSecurityToken.ValidTo;
+        var roleList =await _userManager.GetRolesAsync(user);
+        authModel.Roles = roleList.ToList();
+
+
+        return authModel;
+    }
 }

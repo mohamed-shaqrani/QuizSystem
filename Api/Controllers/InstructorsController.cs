@@ -1,8 +1,6 @@
 ﻿using Core.Models;
-using Infrastructure.Data;
 using Infrastructure.UnitOfWork;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +10,7 @@ namespace Api.Controllers;
 [AllowAnonymous]
 public class InstructorsController : ControllerBase
 {
-    private readonly IUnitOfWork _unitOfWork ;
+    private readonly IUnitOfWork _unitOfWork;
     public InstructorsController(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;

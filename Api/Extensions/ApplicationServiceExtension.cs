@@ -9,7 +9,7 @@ public static class ApplicationServiceExtension
     {
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuthService, AuthService>();
-       
+
         return services;
     }
 }

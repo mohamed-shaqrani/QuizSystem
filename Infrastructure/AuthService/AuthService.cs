@@ -1,10 +1,11 @@
-﻿using Core.Models;
+﻿using Core.Constants;
+using Core.Models;
+using Infrastructure.UnitOfWork;
 using Infrastructure.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
 
@@ -12,9 +13,11 @@ namespace Infrastructure.AuthService;
 public class AuthService : IAuthService
 {
     private readonly UserManager<AppUser> _userManager;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly JWT _jwt;
-    public AuthService(UserManager<AppUser> userManager,IOptions<JWT> jwt)
+    public AuthService(UserManager<AppUser> userManager, IOptions<JWT> jwt, IUnitOfWork unitOfWork)
     {
+        _unitOfWork = unitOfWork;
         _userManager = userManager;
         _jwt = jwt.Value;
     }
@@ -41,9 +44,10 @@ public class AuthService : IAuthService
             Email = model.Email,
 
         };
-       var result = await _userManager.CreateAsync(user,model.Password);
-        if (!result.Succeeded) { 
-            var errors= string.Empty;
+        var result = await _userManager.CreateAsync(user, model.Password);
+        if (!result.Succeeded)
+        {
+            var errors = string.Empty;
             foreach (var error in result.Errors)
             {
                 errors += $"{error.Description},";
@@ -51,22 +55,36 @@ public class AuthService : IAuthService
             return new AuthModel { Message = errors };
 
         }
-        await _userManager.AddToRoleAsync(user, "Student");
-        var jwtSecruityToken= await CreateJwtToken(user);
+        await _userManager.AddToRoleAsync(user, UserRole.Student);
+        var jwtSecruityToken = await CreateJwtToken(user);
+        var student = new Student
+        {
+            Address = model.Address,
+            FirstName = model.FirstName,
+            LastName = model.LastName,
+            CreatedDate = DateTime.UtcNow,
+            Mobile = model.Mobile,
+            IdentityId = user.Id,
+            CreatedBy = user.UserName,
+        };
+        await _unitOfWork.Students.AddAsync(student);
+        await _unitOfWork.Complete();
+
         return new AuthModel
         {
             Email = user.Email,
             UserName = user.UserName,
             ExpiresOn = jwtSecruityToken.ValidTo,
             IsAuthenticated = true,
-            Roles = new List<string> { "Student" }
+            Roles = new List<string> { UserRole.Student }
         };
+
 
     }
     public async Task<JwtSecurityToken> CreateJwtToken(AppUser user)
     {
-        var userClaim = await _userManager.GetClaimsAsync(user); 
-        var roles= await _userManager.GetRolesAsync(user);
+        var userClaim = await _userManager.GetClaimsAsync(user);
+        var roles = await _userManager.GetRolesAsync(user);
         var roleClaims = new List<Claim>();
         foreach (var role in roles)
         {

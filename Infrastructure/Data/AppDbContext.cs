@@ -9,11 +9,11 @@ public class AppDbContext : IdentityDbContext<AppUser>
       : base(options)
     {
     }
-    public  DbSet<AppUser> AppUsers { get; set; }
+    public DbSet<AppUser> AppUsers { get; set; }
     public DbSet<Student> Students { get; set; }
     public DbSet<Instructor> Instructors { get; set; }
     public DbSet<Course> Courses { get; set; }
-    public DbSet<Exam> Exams { get; set; }  
+    public DbSet<Exam> Exams { get; set; }
     public DbSet<Question> Questions { get; set; }
     public DbSet<Answer> Answers { get; set; }
     public DbSet<Choice> Choices { get; set; }

@@ -18,6 +18,6 @@ public class InstructorsController : ControllerBase
     [HttpGet]
     public async Task<List<Instructor>> GetAll()
     {
-        return await _unitOfWork.Instructors.GetAllQueryable().ToListAsync();
+        return await _unitOfWork.Instructors.AsQuerable().ToListAsync();
     }
 }

@@ -30,7 +30,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         // Use AsNoTracking for read-only queries for better performance
         return await _dbSet.AsNoTracking().Where(expression).ToListAsync();
     }
-    public IQueryable<T> GetAllQueryable()
+    public IQueryable<T> AsQuerable()
          => _Context.Set<T>().AsQueryable();
 
     public async Task<T> GetById(int id)

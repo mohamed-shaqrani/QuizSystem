@@ -3,14 +3,14 @@
 namespace Infrastructure.ViewModel;
 public class RegisterModel
 {
-    [Required,StringLength(100)]    
-    public string FirstName {  get; set; }
+    [Required, StringLength(100)]
+    public string FirstName { get; set; }
     [Required, StringLength(100)]
 
     public string LastName { get; set; }
     [Required, StringLength(100)]
 
-    public string UserName {  get; set; }
+    public string UserName { get; set; }
     [Required, StringLength(256)]
 
     public string Password { get; set; }
@@ -23,4 +23,5 @@ public class RegisterModel
     [Required, StringLength(350)]
 
     public string Address { get; set; }
+    public DateTime DateOfBirth { get; set; }
 }

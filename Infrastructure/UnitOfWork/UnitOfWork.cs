@@ -19,6 +19,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Answer> Answers { get; private set; }
 
+    public IGenericRepository<CourseStudent> CourseStudents { get; private set; }
+
+
     public UnitOfWork(AppDbContext context)
     {
         _context = context;
@@ -26,10 +29,10 @@ public class UnitOfWork : IUnitOfWork
         Instructors = new GenericRepository<Instructor>(_context);
         Students = new GenericRepository<Student>(_context);
         Exams = new GenericRepository<Exam>(_context);
-        Questions = new GenericRepository<Question>(_context);  
+        Questions = new GenericRepository<Question>(_context);
         Answers = new GenericRepository<Answer>(_context);
         Courses = new GenericRepository<Course>(_context);
-
+        CourseStudents = new GenericRepository<CourseStudent>(_context);
     }
     public async Task<int> Complete()
     {

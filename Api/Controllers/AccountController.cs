@@ -1,4 +1,5 @@
-﻿using Infrastructure.AuthService;
+﻿using Core.Constants;
+using Infrastructure.AuthService;
 using Infrastructure.ViewModel;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,29 +14,53 @@ public class AccountController : ControllerBase
     {
         _authService = authService;
     }
-    [HttpPost]
+    [HttpPost("register")]
     public async Task<IActionResult> RegisterStudent(RegisterModel model)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _authService.RegisterAsync(model);
+        var result = await _authService.RegisterAsync(model, UserRole.Student);
         if (!result.IsAuthenticated)
             return BadRequest(result.Message);
         else
             return Ok(result);
     }
-    [HttpGet]
-    public async Task<ActionResult> Login([FromQuery] TokenRequestModel model)
+    [HttpPost("register-instructor")]
+    public async Task<IActionResult> RegisterInstructor(RegisterModel model)
     {
         if (!ModelState.IsValid)
-        {
             return BadRequest(ModelState);
-        }
+
+        var result = await _authService.RegisterAsync(model, UserRole.Instructor);
+        if (!result.IsAuthenticated)
+            return BadRequest(result.Message);
+        else
+            return Ok(result);
+    }
+    [HttpPost("login")]
+    public async Task<ActionResult> Login([FromBody] TokenRequestModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var result = await _authService.GetTokenAsync(model);
         if (!result.IsAuthenticated)
             return BadRequest(result.Message);
         else
             return Ok(result);
     }
+    [HttpPost("instructor-login")]
+    public async Task<ActionResult> LoginAsInstructor([FromBody] TokenRequestModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.GetTokenAsync(model);
+        if (!result.IsAuthenticated)
+            return BadRequest(result.Message);
+        else
+            return Ok(result);
+    }
+
 }

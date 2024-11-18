@@ -1,8 +1,10 @@
-﻿using Core.Models;
+﻿using Core.Constants;
+using Core.Models;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 namespace Api.Extensions;
@@ -34,6 +36,14 @@ public static class SecurityExtension
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JWT:Key"])),
                 ClockSkew = TimeSpan.Zero
             };
+        });
+        services.AddAuthorization(options =>
+        {
+
+            options.AddPolicy(UserRole.Student, policy =>
+            {
+                policy.RequireClaim(ClaimTypes.Role, UserRole.Student);
+            });
         });
         services.AddAuthentication();
         services.AddAuthorization();

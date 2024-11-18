@@ -22,7 +22,7 @@ public class AuthService : IAuthService
         _jwt = jwt.Value;
     }
 
-    public async Task<AuthModel> RegisterAsync(RegisterModel model)
+    public async Task<AuthModel> RegisterAsync(RegisterModel model, string role)
     {
         if (await _userManager.FindByEmailAsync(model.Email) is not null)
         {
@@ -55,20 +55,9 @@ public class AuthService : IAuthService
             return new AuthModel { Message = errors };
 
         }
-        await _userManager.AddToRoleAsync(user, UserRole.Student);
+        await _userManager.AddToRoleAsync(user, role);
         var jwtSecruityToken = await CreateJwtToken(user);
-        var student = new Student
-        {
-            Address = model.Address,
-            FirstName = model.FirstName,
-            LastName = model.LastName,
-            CreatedDate = DateTime.UtcNow,
-            Mobile = model.Mobile,
-            IdentityId = user.Id,
-            CreatedBy = user.UserName,
-        };
-        await _unitOfWork.Students.AddAsync(student);
-        await _unitOfWork.Complete();
+        await CreateNewUser(model, user, role);
 
         return new AuthModel
         {
@@ -76,31 +65,73 @@ public class AuthService : IAuthService
             UserName = user.UserName,
             ExpiresOn = jwtSecruityToken.ValidTo,
             IsAuthenticated = true,
-            Roles = new List<string> { UserRole.Student }
+            Token = new JwtSecurityTokenHandler().WriteToken(jwtSecruityToken),
+            Roles = new List<string> { role }
         };
 
 
     }
+
+    private async Task CreateNewUser(RegisterModel model, AppUser user, string role)
+    {
+        if (role == UserRole.Student)
+        {
+            var student = new Student
+            {
+                Address = model.Address,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                CreatedDate = DateTime.UtcNow,
+                Mobile = model.Mobile,
+                IdentityId = user.Id,
+                CreatedBy = user.UserName,
+            };
+            await _unitOfWork.Students.AddAsync(student);
+
+        }
+        else
+        {
+            var instructor = new Instructor
+            {
+
+                Address = model.Address,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                IdentityId = user.Id,
+                CreatedDate = DateTime.UtcNow,
+                CreatedBy = model.UserName,
+                Mobile = model.Mobile,
+                DateOfBirth = model.DateOfBirth,
+
+            };
+            await _unitOfWork.Instructors.AddAsync(instructor);
+
+
+        }
+        await _unitOfWork.Complete();
+    }
+
     public async Task<JwtSecurityToken> CreateJwtToken(AppUser user)
     {
         var userClaim = await _userManager.GetClaimsAsync(user);
         var roles = await _userManager.GetRolesAsync(user);
         var roleClaims = new List<Claim>();
+
         foreach (var role in roles)
         {
             roleClaims.Add(new Claim(ClaimTypes.Role, role));
+
         }
         var claims = new[]
         {
                new Claim(JwtRegisteredClaimNames.GivenName,$"{ user.UserName} "),
-
+               new Claim(ClaimTypes.NameIdentifier,$"{ user.Id} "),
                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-
-
-
         }.Union(roleClaims).Union(userClaim);
+
         var symtricSecruityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
         var signingCredentials = new SigningCredentials(symtricSecruityKey, SecurityAlgorithms.HmacSha256);
+
         var symtricSecruityToken = new JwtSecurityToken
         (
             issuer: _jwt.Issuer,
@@ -108,6 +139,7 @@ public class AuthService : IAuthService
             claims: claims,
             expires: DateTime.Now.AddDays(_jwt.DurationInDays),
             signingCredentials: signingCredentials);
+
         return symtricSecruityToken;
     }
 
@@ -115,7 +147,8 @@ public class AuthService : IAuthService
     {
         var authModel = new AuthModel();
         var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user is null || !await _userManager.CheckPasswordAsync(user, model.Password)) {
+        if (user is null || !await _userManager.CheckPasswordAsync(user, model.Password))
+        {
             authModel.Message = $"Email or Password is incorrect ";
             return authModel;
         }
@@ -125,9 +158,8 @@ public class AuthService : IAuthService
         authModel.Email = user.Email;
         authModel.UserName = user.UserName;
         authModel.ExpiresOn = jwtSecurityToken.ValidTo;
-        var roleList =await _userManager.GetRolesAsync(user);
+        var roleList = await _userManager.GetRolesAsync(user);
         authModel.Roles = roleList.ToList();
-
 
         return authModel;
     }

@@ -1,67 +1,86 @@
-﻿using Infrastructure.Data;
+﻿using Core.Models;
+using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.GenericRepository;
-public class GenericRepository<T> : IGenericRepository<T> where T : class
+public class GenericRepository<Entity> : IGenericRepository<Entity> where Entity : BaseModel
 {
     protected AppDbContext _Context;
-    private readonly DbSet<T> _dbSet;
+    private readonly DbSet<Entity> _dbSet;
 
 
     public GenericRepository(AppDbContext context)
     {
         _Context = context;
-        _dbSet = _Context.Set<T>(); // Initialize _dbSet here
+        _dbSet = _Context.Set<Entity>(); // Initialize _dbSet here
 
     }
-    public async Task<IEnumerable<T>> GetAllAsync()
+    public async Task<IEnumerable<Entity>> GetAllAsync()
     {
         // Use AsNoTracking for read-only queries for better performance
         return await _dbSet.AsNoTracking().ToListAsync();
     }
-    public async Task<IEnumerable<T>> GetAllAsyncWithSpecefic(Expression<Func<T, bool>> expression)
+    public async Task<IEnumerable<Entity>> GetAllAsyncWithSpecefic(Expression<Func<Entity, bool>> expression)
     {
         // Use AsNoTracking for read-only queries for better performance
         return await _dbSet.AsNoTracking().Where(expression).ToListAsync();
     }
-    public IQueryable<T> AsQuerable()
-         => _Context.Set<T>().AsQueryable();
+    public IQueryable<Entity> AsQuerable()
+         => _Context.Set<Entity>().AsQueryable();
 
-    public async Task<T> GetById(int id)
-        => await _Context.Set<T>().FindAsync(id);
+    public async Task<Entity> GetById(int id)
+        => await _Context.Set<Entity>().FirstOrDefaultAsync(x => x.Id == id);
 
-    public async Task AddAsync(T entity)
-        => await _Context.Set<T>().AddAsync(entity);
+    public async Task AddAsync(Entity entity)
+        => await _Context.Set<Entity>().AddAsync(entity);
 
-    public async Task<int> DeleteAsync(Expression<Func<T, bool>> expression)
-        => await _Context.Set<T>().Where(expression).ExecuteDeleteAsync();
-
-    public async Task<bool> Update(T updatedEntity)
+    public async Task<bool> Update(Entity updatedEntity)
     {
-        _Context.Set<T>().Update(updatedEntity);
+        _Context.Set<Entity>().Update(updatedEntity);
         return await _Context.SaveChangesAsync() > 0;
 
     }
-    public IQueryable<T> Include(params Expression<Func<T, object>>[] includes)
+    public IQueryable<Entity> Include(params Expression<Func<Entity, object>>[] includes)
     {
-        IQueryable<T> query = _dbSet;
+        IQueryable<Entity> query = _dbSet;
         foreach (var include in includes)
         {
             query = query.Include(include);
         }
         return query;
     }
-    public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+    public async Task<bool> AnyAsync(Expression<Func<Entity, bool>> predicate)
     {
         return await _dbSet.AnyAsync(predicate);
     }
 
+    public void SaveInclude(Entity entity, params string[] props)
+    {
+        var local = _dbSet.Local.FirstOrDefault(x => x.Id == entity.Id);
+        EntityEntry entry = null;
+        if (local is null)
+            entry = _Context.Entry(entity);
 
+        else
+            entry = _Context.ChangeTracker.Entries<Entity>().FirstOrDefault(x => x.Entity.Id == entity.Id);
+
+        foreach (var item in entry.Properties)
+        {
+            if (props.Contains(item.Metadata.Name))
+            {
+                item.CurrentValue = entity.GetType().GetProperty(item.Metadata.Name).GetValue(entity);
+                item.IsModified = true;
+            }
+        }
+    }
+    public async Task<int> DeleteAsync(Expression<Func<Entity, bool>> expression)
+       => await _Context.Set<Entity>().Where(expression).ExecuteDeleteAsync();
+    public void SoftDelete(Entity entity)
+    {
+        entity.isDeleted = true;
+        SaveInclude(entity, nameof(BaseModel.isDeleted));
+    }
 }
 

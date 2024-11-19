@@ -44,10 +44,19 @@ public static class SecurityExtension
             {
                 policy.RequireClaim(ClaimTypes.Role, UserRole.Student);
             });
+
+            options.AddPolicy(UserRole.Instructor, policy =>
+            {
+                policy.RequireClaim(ClaimTypes.Role, UserRole.Instructor);
+            });
+            options.AddPolicy(UserRole.Administrator, policy =>
+            {
+                policy.RequireClaim(ClaimTypes.Role, UserRole.Administrator);
+            });
         });
         services.AddAuthentication();
         services.AddAuthorization();
 
         return services;
     }
-    }
+}

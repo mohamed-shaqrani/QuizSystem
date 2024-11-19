@@ -1,16 +1,19 @@
 ﻿using System.Linq.Expressions;
 
 namespace Infrastructure.GenericRepository;
-public interface IGenericRepository<T> where T : class
+public interface IGenericRepository<Entity> where Entity : class
 {
-    Task<T> GetById(int id);
-    Task<bool> Update(T updatedEntity);
-    Task<int> DeleteAsync(Expression<Func<T, bool>> expression);
-    Task AddAsync(T entity);
-    Task<IEnumerable<T>> GetAllAsync();
-    IQueryable<T> AsQuerable();
-    Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
-    IQueryable<T> Include(params Expression<Func<T, object>>[] includes);
-    Task<IEnumerable<T>> GetAllAsyncWithSpecefic(Expression<Func<T, bool>> expression);
+    Task<Entity> GetById(int id);
+    Task<IEnumerable<Entity>> GetAllAsync();
+    Task<IEnumerable<Entity>> GetAllAsyncWithSpecefic(Expression<Func<Entity, bool>> expression);
+    IQueryable<Entity> AsQuerable();
+    Task AddAsync(Entity entity);
+    Task<bool> Update(Entity updatedEntity);
+    Task<bool> AnyAsync(Expression<Func<Entity, bool>> predicate);
+    IQueryable<Entity> Include(params Expression<Func<Entity, object>>[] includes);
+
+    Task<int> DeleteAsync(Expression<Func<Entity, bool>> expression);
+    void SaveInclude(Entity entity, params string[] props);
+    void SoftDelete(Entity entity);
 
 }

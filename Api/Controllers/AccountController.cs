@@ -50,17 +50,4 @@ public class AccountController : ControllerBase
         else
             return Ok(result);
     }
-    [HttpPost("instructor-login")]
-    public async Task<ActionResult> LoginAsInstructor([FromBody] TokenRequestModel model)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var result = await _authService.GetTokenAsync(model);
-        if (!result.IsAuthenticated)
-            return BadRequest(result.Message);
-        else
-            return Ok(result);
-    }
-
 }

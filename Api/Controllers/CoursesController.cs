@@ -36,6 +36,10 @@ public class CoursesController : ControllerBase
     [HttpGet("enroll-course/{courseId}"), Authorize(Policy = UserRole.Student)]
     public async Task<ActionResult> EnrolInCourse(int courseId)
     {
+        if (!await _unitOfWork.Courses.AnyAsync(x => x.Id == courseId))
+            return BadRequest("course was not found");
+
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var getStudentId = await _unitOfWork.Students.AsQuerable()
                                                      .FirstAsync(x => x.IdentityId == userId);
@@ -44,16 +48,16 @@ public class CoursesController : ControllerBase
                                                   .Select(x => x.Id)
                                                   .FirstOrDefaultAsync();
 
-        var studentCourse = await _unitOfWork.CourseStudents.AnyAsync(x => x.CourseId == courseId && x.StudentId == getUserId);
+        var studentCourseExist = await _unitOfWork.CourseStudents.AnyAsync(x => x.CourseId == courseId && x.StudentId == getUserId);
 
-        if (studentCourse)
+        if (studentCourseExist)
             return BadRequest("Student Enrolled in this course before");
 
         var studentCoures = new CourseStudent
         {
             CourseId = courseId,
             StudentId = getStudentId.Id,
-            CreatedBy = userId,
+            CreatedBy = userId!,
         };
 
         await _unitOfWork.CourseStudents.AddAsync(studentCoures);
@@ -62,13 +66,52 @@ public class CoursesController : ControllerBase
 
         return Ok();
     }
-    [HttpPost]
-    public async Task<ActionResult> Add(CreateCourseViewModel course)
-    {
 
+    [HttpPost("create"), Authorize(Policy = UserRole.Instructor)]
+    public async Task<ActionResult> Create([FromBody] CreateCourseViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(model);
+
+        var course = new Course
+        {
+            Description = model.Description,
+            Name = model.Name,
+            CreatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
+            CreatedDate = DateTime.UtcNow,
+        };
         await _unitOfWork.Courses.AddAsync(course);
         var result = await _unitOfWork.Complete();
 
         return result > 0 ? Ok(result) : BadRequest("Something went wrong");
+    }
+    [HttpPut("update"), Authorize(Policy = UserRole.Instructor)]
+    public async Task<ActionResult> Update([FromBody] UpdateCourseViewModel model)
+    {
+        if (!ModelState.IsValid)
+
+            return BadRequest(model);
+
+        var course = new Course
+        {
+            UpdatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
+            Description = model.Description,
+            Name = model.Name,
+            Id = model.Id
+        };
+        _unitOfWork.Courses.SaveInclude(course, nameof(Course.UpdatedBy), nameof(Course.Name), nameof(Course.Description));
+        var result = await _unitOfWork.Complete();
+
+        return result > 0 ? Ok(result) : BadRequest("Something went wrong");
+    }
+    [HttpDelete("delete/{courseId}"), Authorize(Policy = UserRole.Instructor)]
+    public async Task<ActionResult> Delete(int courseId)
+    {
+        var course = await _unitOfWork.Courses.GetById(courseId);
+        _unitOfWork.Courses.SoftDelete(course);
+        await _unitOfWork.Complete();
+
+        return Ok();
+
     }
 }

@@ -15,9 +15,38 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
     {
         _context = context;
     }
-    public async Task<ResponseViewModel<Exam>> CreateQuizOrFinal(CreateExamViewModel model)
+
+    public async Task<ResponseViewModel<int>> AssignStudents(AssignExamToStudentsViewModel model)
     {
-        var response = new ResponseViewModel<Exam>();
+        var response = new ResponseViewModel<int>();
+        var ExamStduentList = new List<ExamStudent>();
+        foreach (var item in model.StudentIds)
+        {
+            var student = new ExamStudent
+            {
+                ExamId = model.ExamId,
+                StudentId = item,
+                CreatedBy = model.InstructorUserName,
+            };
+            ExamStduentList.Add(student);
+        }
+        await _context.AddRangeAsync(ExamStduentList);
+        var result = await _context.SaveChangesAsync() > 0;
+        if (result)
+        {
+            response.IsSuccess = true;
+            response.Data = 1;
+            return response;
+
+        }
+        response.IsSuccess = false;
+        response.Message = "Something went wrong";
+        return response;
+    }
+
+    public async Task<ResponseViewModel<int>> CreateQuizOrFinal(CreateExamViewModel model)
+    {
+        var response = new ResponseViewModel<int>();
         var isValid = await ValidateInstructorCourse(model, response);
 
         if (!isValid.IsSuccess)
@@ -45,8 +74,9 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         return response;
     }
 
-    private async Task<ResponseViewModel<Exam>> ExamCreation(CreateExamViewModel model, ResponseViewModel<Exam> response, List<QuestionViewModel> questionPools)
+    private async Task<ResponseViewModel<int>> ExamCreation(CreateExamViewModel model, ResponseViewModel<int> response, List<QuestionViewModel> questionPools)
     {
+
         var exam = new Exam
         {
             ExamType = model.ExamType,
@@ -55,6 +85,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
             CourseId = model.CourseId,
             InstructorId = model.InstructorId,
             CreatedBy = model.InstructorUserName,
+            MaxScore = model.QuestionPools.Sum(s => s.Marks),
             ExamQuestions = questionPools.Select(eq => new ExamQuestion
             {
                 QuestionId = eq.QuestionId,
@@ -62,6 +93,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
                 CreatedBy = model.InstructorUserName,
                 CreatedDate = DateTime.UtcNow,
                 CourseId = model.CourseId,
+                Marks = eq.Marks,
             }).ToList(),
 
         };
@@ -69,8 +101,9 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         var result = await _context.SaveChangesAsync() > 0;
         if (result)
         {
+
             response.IsSuccess = true;
-            response.Data = exam;
+            response.Data = exam.Id;
             return response;
         }
         response.IsSuccess = false;
@@ -78,7 +111,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         return response;
     }
 
-    private async Task<ResponseViewModel<Exam>> ValidateInstructorCourse(CreateExamViewModel model, ResponseViewModel<Exam> response)
+    private async Task<ResponseViewModel<int>> ValidateInstructorCourse(CreateExamViewModel model, ResponseViewModel<int> response)
     {
         var checkInstructorCourse = await _context.CourseInstructors
                                                                      .AnyAsync(x => x.InstructorId == model.InstructorId

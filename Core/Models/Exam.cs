@@ -8,6 +8,7 @@ public class Exam : BaseModel
     public DateTime? StartDateTime { get; set; }
     public bool IsActive { get; set; }
     public string Description { get; set; }
+    public int MaxScore { get; set; }
 
     public ExamType ExamType { get; set; }
     public int NumberOfQuestions { get; set; }

@@ -1,6 +1,7 @@
 using Api.Extensions;
 using Api.Middlewares;
 using Core.Models;
+using Core.Seeding;
 using Infrastructure.AuthService;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
@@ -40,6 +41,8 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<AppUser>>();
 
     await SeedData.SeedInstructorsAndCourseInstructors(context, authService, userManager);
+    SeedQuestions.SeedQuestionsForCourses(context);
+
 }
 
 app.UseHttpsRedirection();

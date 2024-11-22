@@ -19,6 +19,7 @@ namespace Infrastructure.Data
 
             for (int i = 1; i <= 20; i++)
             {
+
                 var instructor = new RegisterModel
                 {
                     FirstName = "Instructor" + i,
@@ -28,7 +29,7 @@ namespace Infrastructure.Data
                     Password = "P@ssw0rd" + i,
                     Mobile = "1234567890",
                     Address = "Some Address " + i,
-                    DateOfBirth = DateTime.Now.AddYears(-30) // Assuming the instructors are around 30 years old
+                    DateOfBirth = DateTime.Now.AddYears(-30)
                 };
                 instructors.Add(instructor);
             }
@@ -54,7 +55,7 @@ namespace Infrastructure.Data
                             LastName = instructorModel.LastName,
                             Address = instructorModel.Address,
                             Mobile = instructorModel.Mobile,
-                            CreatedBy = appUser.Id,
+                            CreatedBy = appUser.UserName,
 
                             CourseInstructors = new List<CourseInstructor>
                             {
@@ -67,16 +68,13 @@ namespace Infrastructure.Data
                             },
 
                         };
-
                         context.Instructors.Add(instructor);
 
                         await context.SaveChangesAsync();
 
                     }
-                    else
-                    {
 
-                    }
+
                 }
                 catch (Exception ex)
                 {

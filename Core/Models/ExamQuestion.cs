@@ -5,8 +5,9 @@ public class ExamQuestion :BaseModel
     public Exam Exam { get; set; }         
 
     public int QuestionId { get; set; }     
-    public Question Question { get; set; }   
-
+    public Question Question { get; set; }
+    public int CourseId { get; set; }  
+    public Course Course { get; set; }
     public int QuestionOrder { get; set; }  
     public int Marks { get; set; }   
 }

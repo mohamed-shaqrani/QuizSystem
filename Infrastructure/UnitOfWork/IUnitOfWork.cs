@@ -8,6 +8,8 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Student> Students { get; }
 
     IGenericRepository<CourseStudent> CourseStudents { get; }
+    IGenericRepository<CourseInstructor> CourseInstructors { get; }
+
     IGenericRepository<Course> Courses { get; }
     IGenericRepository<Exam> Exams { get; }
     IGenericRepository<Question> Questions { get; }

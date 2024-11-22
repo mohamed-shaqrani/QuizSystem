@@ -1,7 +1,7 @@
 ﻿using Core.Enum;
 
 namespace Core.Models;
-public class Exam :BaseModel
+public class Exam : BaseModel
 {
     public string Title { get; set; }
     public int? DurationInMinutes { get; set; }
@@ -12,8 +12,14 @@ public class Exam :BaseModel
     public ExamType ExamType { get; set; }
     public int NumberOfQuestions { get; set; }
     public bool IsManualAssignment { get; set; }
+    public int CourseId { get; set; }
+
     public Course Course { get; set; }
+
+    public int InstructorId { get; set; }
+
+    public Instructor Instructor { get; set; }
     public ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();
-    public ICollection<ExamStudent> ExamStudents { get; set; } = new List<ExamStudent>(); 
+    public ICollection<ExamStudent> ExamStudents { get; set; } = new List<ExamStudent>();
 
 }

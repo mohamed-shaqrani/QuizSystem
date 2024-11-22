@@ -1,6 +1,6 @@
 ﻿namespace Core.Enum;
 public enum ExamType
 {
-    Quiz,
-    Final
+    Quiz= 1,
+    Final=2
 }

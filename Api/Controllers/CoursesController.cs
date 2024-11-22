@@ -108,6 +108,12 @@ public class CoursesController : ControllerBase
     public async Task<ActionResult> Delete(int courseId)
     {
         var course = await _unitOfWork.Courses.GetById(courseId);
+        if (course.isDeleted)
+            return BadRequest("The course has already been removed");
+
+        if (await _unitOfWork.CourseStudents.AnyAsync(x=>x.CourseId == courseId))
+            return BadRequest("Students are already enrolled in this course, so it cannot be deleted.");
+ 
         _unitOfWork.Courses.SoftDelete(course);
         await _unitOfWork.Complete();
 

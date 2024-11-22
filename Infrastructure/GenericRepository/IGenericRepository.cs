@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using Core.Models;
+using System.Linq.Expressions;
 
 namespace Infrastructure.GenericRepository;
 public interface IGenericRepository<Entity> where Entity : class

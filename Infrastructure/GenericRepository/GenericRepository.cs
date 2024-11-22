@@ -32,7 +32,7 @@ public class GenericRepository<Entity> : IGenericRepository<Entity> where Entity
 
     public async Task<Entity> GetById(int id)
         => await _Context.Set<Entity>().FirstOrDefaultAsync(x => x.Id == id);
-
+  
     public async Task AddAsync(Entity entity)
         => await _Context.Set<Entity>().AddAsync(entity);
 

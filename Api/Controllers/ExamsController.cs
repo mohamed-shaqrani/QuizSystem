@@ -1,16 +1,16 @@
 ﻿using AutoMapper;
-using Core.Constants;
+using AutoMapper.QueryableExtensions;
 using Core.Models;
 using Core.ViewModels;
 using Core.ViewModels.ExamViewModels;
 using Infrastructure.UnitOfWork;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Api.Controllers;
 [Route("api/exams")]
-[Authorize(UserRole.Instructor)]
+//[Authorize(UserRole.Instructor)]
 [ApiController]
 public class ExamsController : ControllerBase
 {
@@ -23,8 +23,34 @@ public class ExamsController : ControllerBase
         _mapper = mapper;
         _unitOfWork = unitOfWork;
     }
+    [HttpGet("details")]
+    public async Task<ActionResult<Exam>> GetById(int id, int instructorId)
+    {
+        var exam = await _unitOfWork.Exams.AsQuerable()
+                                            .Where(x => x.Id == id && x.InstructorId == instructorId)
+                                           .Include(e => e.ExamQuestions)
+                                           .ThenInclude(eq => eq.Question)
+                                           .ThenInclude(eq => eq.Choices)
+                                           .ProjectTo<ExamDetailsViewModel>(_mapper.ConfigurationProvider)
+                                           .FirstOrDefaultAsync();
+
+        return Ok(exam);
+    }
+    [HttpGet("instructor")]
+    public async Task<ActionResult<Exam>> GetAllInstuctorExams(int instructorId)
+    {
+        var exam = await _unitOfWork.Exams.AsQuerable()
+                                            .Where(x=>x.InstructorId == instructorId)
+                                           .Include(e => e.ExamQuestions)
+                                           .ThenInclude(eq => eq.Question)
+                                           .ThenInclude(eq => eq.Choices)
+                                           .ProjectTo<ExamDetailsViewModel>(_mapper.ConfigurationProvider)
+                                           .ToListAsync();
+
+        return Ok(exam);
+    }
     [HttpGet]
-    public async Task<ActionResult<Exam>> GetById(int id)
+    public async Task<ActionResult<Exam>> GetSingleExamFullDetails(int id)
     {
         var exam = await _unitOfWork.Exams.GetById(id);
         return Ok(exam);

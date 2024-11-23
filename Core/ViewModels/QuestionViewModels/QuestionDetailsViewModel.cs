@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Core.ViewModels.ChoiceViewModels;
+using System.ComponentModel.DataAnnotations;
 
 namespace Core.ViewModels.QuestionViewModels;
-public class QuestionViewModel
+public class QuestionDetailsViewModel
 {
     [Required]
     public int Id { get; set; }
@@ -12,5 +13,5 @@ public class QuestionViewModel
     public int Marks { get; set; }
     public int QuestionRandomGrade { get; set; }
     [Required]
-    public List<ChoicesViewModel> ChoicesViewModel { get; set; } = new List<ChoicesViewModel>();
+    public List<ChoiceDetailsViewModel> ChoicesViewModel { get; set; } = new List<ChoiceDetailsViewModel>();
 }

@@ -106,7 +106,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
             QuestionPools = questions.Select(x => new QuestionViewModel
             {
                 Marks = x.Grade,
-                QuestionId = x.Id,
+                Id = x.Id,
 
 
             }).ToList(),
@@ -115,7 +115,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         var created = await ExamCreation(createExamViewModel, response, createExamViewModel.QuestionPools);
         return created;
     }
-
+    //we should make calc in DB 
     private static List<int> GetRandomQuestionIds(List<RandomQuestionViewModel> result)
     {
         var groupQuestionsByDifficultyLevel = result.GroupBy(x => x.DifficultyLevel)
@@ -182,16 +182,16 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         }
 
 
-        var listOfQuestionIds = model.QuestionPools.Select(x => x.QuestionId);
+        var listOfQuestionIds = model.QuestionPools.Select(x => x.Id);
         var listOfChicesId = model.QuestionPools.Select(x => x.ChoicesViewModel).ToList();
 
         var questionPools = await _context.Questions
                                               .Select(x => new QuestionViewModel
                                               {
-                                                  QuestionId = x.Id,
+                                                  Id = x.Id,
 
                                               }).Where(q => listOfQuestionIds
-                                              .Any(a => a == q.QuestionId))
+                                              .Any(a => a == q.Id))
                                               .ToListAsync();
 
         if (!questionPools.Any())
@@ -220,7 +220,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
             IsRandom = model.IsRandom,
             ExamQuestions = questionPools.Select(eq => new ExamQuestion
             {
-                QuestionId = eq.QuestionId,
+                QuestionId = eq.Id,
                 QuestionOrder = eq.QuestionOrder,
                 CreatedBy = model.InstructorUserName,
                 CreatedDate = DateTime.UtcNow,

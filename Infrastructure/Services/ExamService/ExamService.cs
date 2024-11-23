@@ -1,4 +1,5 @@
-﻿using Core.Models;
+﻿using Core.Enum;
+using Core.Models;
 using Core.ViewModels;
 using Core.ViewModels.ExamViewModels;
 using Core.ViewModels.QuestionViewModels;
@@ -19,17 +20,40 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
     public async Task<ResponseViewModel<int>> AssignStudents(AssignExamToStudentsViewModel model)
     {
         var response = new ResponseViewModel<int>();
-        var ExamStduentList = new List<ExamStudent>();
-        foreach (var item in model.StudentIds)
+        var getCouseIdOfExam = await _context.Exams.Where(x => x.Id == model.ExamId)
+                                                   .Select(x => x.CourseId)
+                                                   .FirstOrDefaultAsync();
+
+        var studentIds = await _context.CourseStudents.Where(x => x.CourseId == getCouseIdOfExam
+                                                         && model.StudentIds.All(a => a == x.StudentId))
+                                                        .Select(x => x.StudentId)
+                                                      .ToListAsync();
+        if (studentIds.Any())
         {
-            var student = new ExamStudent
-            {
-                ExamId = model.ExamId,
-                StudentId = item,
-                CreatedBy = model.InstructorUserName,
-            };
-            ExamStduentList.Add(student);
+            return await AssignStudentsToExamAsync(model, response, studentIds);
         }
+
+        else
+        {
+            response.IsSuccess = false;
+            response.ErrorCode = ErrorCode.StudentsNotEnrolledInCourse;
+
+            response.Message = "No valid students found for the specified course and exam.";
+            return response;
+        }
+    }
+
+    private async Task<ResponseViewModel<int>> AssignStudentsToExamAsync(AssignExamToStudentsViewModel model, ResponseViewModel<int> response, List<int> studentIds)
+    {
+        var ExamStduentList = new List<ExamStudent>();
+
+        var studentsToAssign = studentIds.Select(studentId => new ExamStudent
+        {
+            ExamId = model.ExamId,
+            StudentId = studentId,
+            CreatedBy = model.InstructorUserName,
+        }).ToList();
+
         await _context.AddRangeAsync(ExamStduentList);
         var result = await _context.SaveChangesAsync() > 0;
         if (result)
@@ -40,7 +64,8 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
 
         }
         response.IsSuccess = false;
-        response.Message = "Something went wrong";
+        response.ErrorCode = ErrorCode.DatabaseSaveError;
+        response.Message = "Failed to save exam-student assignments.";
         return response;
     }
 
@@ -50,7 +75,11 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         var isValid = await ValidateInstructorCourse(model, response);
 
         if (!isValid.IsSuccess)
+        {
+            response.Message = "Instructor is not associated with the course or course does not exist.";
+            response.ErrorCode = ErrorCode.InstructorNotAssignedToCourse;
             return response;
+        }
 
 
         var listOfQuestionIds = model.QuestionPools.Select(x => x.QuestionId);
@@ -65,13 +94,15 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
                                               .Any(a => a == q.QuestionId))
                                               .ToListAsync();
 
-        if (questionPools.Any())
-            return await ExamCreation(model, response, questionPools);
+        if (!questionPools.Any())
+        {
+            response.IsSuccess = false;
+            response.Message = "None of the provided question IDs match existing questions.";
+            response.ErrorCode = ErrorCode.InvalidQuestionIds;
+            return response;
+        }
 
-
-        response.IsSuccess = false;
-        response.Message = "Something went wrong";
-        return response;
+        return await ExamCreation(model, response, questionPools);
     }
 
     private async Task<ResponseViewModel<int>> ExamCreation(CreateExamViewModel model, ResponseViewModel<int> response, List<QuestionViewModel> questionPools)

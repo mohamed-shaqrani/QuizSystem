@@ -1,7 +1,7 @@
 ﻿namespace Core.Enum;
 public enum DifficultyLevel
 {
-    Simple,
+    Simple = 1,
     Medium,
     Hard
 }

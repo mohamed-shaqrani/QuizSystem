@@ -18,6 +18,7 @@ public class Exam : BaseModel
     public Course Course { get; set; }
 
     public int InstructorId { get; set; }
+    public bool IsRandom { get; set; }
 
     public Instructor Instructor { get; set; }
     public ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();

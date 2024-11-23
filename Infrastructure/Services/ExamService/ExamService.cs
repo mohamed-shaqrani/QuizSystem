@@ -68,7 +68,107 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         response.Message = "Failed to save exam-student assignments.";
         return response;
     }
+    public async Task<ResponseViewModel<int>> CreateRandomExam(CreateRandomExam model)
+    {
+        var result = await _context.Questions.Where(x => x.InstructorId == model.InstructorId
+                                                         && x.CourseId == model.CourseId)
+                                            .Include(x => x.Choices)
+                                            .Select(x => new RandomQuestionViewModel
+                                            {
 
+                                                QuestionId = x.Id,
+                                                DifficultyLevel = x.Level,
+                                                ChoicesViewModel = x.Choices.Select(choice => new ChoicesViewModel
+                                                {
+                                                    Id = choice.Id,
+
+                                                }).ToList(),
+                                            })
+                                            .ToListAsync();
+        var response = await ValidateRandomExam(result, model);
+        if (!response.IsSuccess)
+            return response;
+
+
+        var quetionIds = GetRandomQuestionIds(result);
+        var questions = _context.Questions.Where(x => quetionIds.Contains(x.Id))
+                                          .Include(x => x.Choices).ToList();
+
+        var createExamViewModel = new CreateExamViewModel
+        {
+            CourseId = model.CourseId,
+            InstructorId = (int)model.InstructorId,
+            Description = "deeeee",
+            ExamType = ExamType.Final,
+            IsRandom = true,
+            Title = "",
+            InstructorUserName = model.InstructorUserName,
+            QuestionPools = questions.Select(x => new QuestionViewModel
+            {
+                Marks = x.Grade,
+                QuestionId = x.Id,
+
+
+            }).ToList(),
+        };
+
+        var created = await ExamCreation(createExamViewModel, response, createExamViewModel.QuestionPools);
+        return created;
+    }
+
+    private static List<int> GetRandomQuestionIds(List<RandomQuestionViewModel> result)
+    {
+        var groupQuestionsByDifficultyLevel = result.GroupBy(x => x.DifficultyLevel)
+                                                    .ToDictionary(g => g.Key, g =>
+                                                    g.Select(x => x.QuestionId)
+                                                    .OrderBy(x => Guid.NewGuid())
+                                                    .ToList());
+        var newBalancedRandomQuestionIds = new List<int>();
+        var questionExamCount = result.Count();
+        var maxDiffcultyLevel = (int)DifficultyLevel.Hard;
+        while (questionExamCount != 0)
+        {
+            for (var i = 1; i <= maxDiffcultyLevel; i++)
+            {
+                var availableQuestions = groupQuestionsByDifficultyLevel[(DifficultyLevel)i]
+                                                       .Where(q => !newBalancedRandomQuestionIds.Contains(q))
+                                                       .ToList();
+
+                if (availableQuestions.Any())
+                {
+                    var randomQuestionId = availableQuestions.FirstOrDefault();
+                    newBalancedRandomQuestionIds.Add(randomQuestionId);
+                    questionExamCount--;
+                }
+            }
+        }
+        return newBalancedRandomQuestionIds;
+    }
+
+    public async Task<ResponseViewModel<int>> ValidateRandomExam(List<RandomQuestionViewModel> result, CreateRandomExam createRandom)
+    {
+        var response = new ResponseViewModel<int>();
+        if (!result.Any() || result.Count < 3)
+        {
+            response.IsSuccess = false;
+            response.ErrorCode = ErrorCode.InsufficientQuestion;
+            response.Message = "The question pool does not have the minimum required number of questions (3)";
+            return response;
+        }
+        var sum = result.Sum(x => (int)x.DifficultyLevel);
+        var averageDifficulty = (double)sum / result.Count;
+
+        if (averageDifficulty < 1 || averageDifficulty > 3)
+        {
+            response.IsSuccess = false;
+            response.ErrorCode = ErrorCode.UnbalancedDifficulty;
+            response.Message = "The selected questions have an imbalanced overall difficulty level. Consider adding questions with varying difficulty to achieve a more balanced exam.";
+            return response;
+        }
+
+        response.IsSuccess = true;
+        return response;
+    }
     public async Task<ResponseViewModel<int>> CreateQuizOrFinal(CreateExamViewModel model)
     {
         var response = new ResponseViewModel<int>();
@@ -117,6 +217,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
             InstructorId = model.InstructorId,
             CreatedBy = model.InstructorUserName,
             MaxScore = model.QuestionPools.Sum(s => s.Marks),
+            IsRandom = model.IsRandom,
             ExamQuestions = questionPools.Select(eq => new ExamQuestion
             {
                 QuestionId = eq.QuestionId,

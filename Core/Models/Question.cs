@@ -11,6 +11,7 @@ public class Question : BaseModel
     public int InstructorId { get; set; }
 
     public Instructor Instructor { get; set; }
+    public int Grade { get; set; }
 
     public ICollection<ExamQuestion> ExamQuestions { get; set; } = new List<ExamQuestion>();
     public ICollection<Choice> Choices { get; set; } = new List<Choice>();

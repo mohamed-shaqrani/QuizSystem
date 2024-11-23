@@ -4,6 +4,7 @@ using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241123111640_UpdateExamQuestionTableName")]
+    partial class UpdateExamQuestionTableName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -161,7 +164,7 @@ namespace Infrastructure.Migrations
                     b.Property<bool>("IsCorrect")
                         .HasColumnType("bit");
 
-                    b.Property<int>("QuestionId")
+                    b.Property<int?>("QuestionId")
                         .HasColumnType("int");
 
                     b.Property<string>("Text")
@@ -337,9 +340,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsManualAssignment")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsRandom")
                         .HasColumnType("bit");
 
                     b.Property<int>("MaxScore")
@@ -543,9 +543,6 @@ namespace Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("Grade")
-                        .HasColumnType("int");
 
                     b.Property<int>("InstructorId")
                         .HasColumnType("int");
@@ -800,13 +797,9 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Models.Choice", b =>
                 {
-                    b.HasOne("Core.Models.Question", "Question")
+                    b.HasOne("Core.Models.Question", null)
                         .WithMany("Choices")
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Question");
+                        .HasForeignKey("QuestionId");
                 });
 
             modelBuilder.Entity("Core.Models.CourseInstructor", b =>

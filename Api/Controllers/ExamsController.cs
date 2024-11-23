@@ -43,6 +43,20 @@ public class ExamsController : ControllerBase
         else
             return BadRequest(result);
     }
+    [HttpPost("create-random")]
+    public async Task<ActionResult<ResponseViewModel<int>>> CreateRandom([FromBody] CreateRandomExam model)
+    {
+        var ins = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+        var insId = _unitOfWork.Instructors.AsQuerable().FirstOrDefault(x => x.IdentityId == ins);
+        model.InstructorId = insId.Id;
+        model.InstructorUserName = User.FindFirst(ClaimTypes.GivenName).Value;
+        var result = await _unitOfWork.ExamService.CreateRandomExam(model);
+        if (result.IsSuccess)
+            return Ok(result.Data);
+
+        else
+            return BadRequest(result);
+    }
     [HttpPost("assgin-students")]
 
     public async Task<ActionResult<ResponseViewModel<int>>> AssignStudents([FromBody] AssignExamToStudentsViewModel model)

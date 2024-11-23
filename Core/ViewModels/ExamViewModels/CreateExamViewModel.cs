@@ -16,6 +16,8 @@ public class CreateExamViewModel
     public int CourseId { get; set; }
     public string InstructorUserName { get; set; } = null!;
     public int InstructorId { get; set; }
+    public bool IsRandom { get; set; }
+
 
     [Required]
     public List<QuestionViewModel> QuestionPools { get; set; } = new List<QuestionViewModel>();

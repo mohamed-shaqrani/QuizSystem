@@ -9,4 +9,7 @@ public enum ErrorCode
     CourseNotFound = 5,
     QuestionChoicesNotMatching = 6,
     StudentsNotEnrolledInCourse = 7,
+    InsufficientQuestion = 8,
+    UnbalancedDifficulty = 9,
+
 }

@@ -11,5 +11,8 @@ public enum ErrorCode
     StudentsNotEnrolledInCourse = 7,
     InsufficientQuestion = 8,
     UnbalancedDifficulty = 9,
+    CourseNotFoundError = 10,
+    CourseAlreadyExist,
+    StudentsAlreadyEnrolledInCourse
 
 }

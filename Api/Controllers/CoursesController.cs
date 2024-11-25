@@ -4,7 +4,6 @@ using Core.ViewModels.CourseViewModel;
 using Infrastructure.UnitOfWork;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace Api.Controllers;
@@ -34,37 +33,12 @@ public class CoursesController : ControllerBase
         return Ok(result);
     }
     [HttpGet("enroll-course/{courseId}"), Authorize(Policy = UserRole.Student)]
-    public async Task<ActionResult> EnrolInCourse(int courseId)
+    public async Task<ActionResult> EnrollInCourse(int courseId, int studentId)
     {
-        if (!await _unitOfWork.Courses.AnyAsync(x => x.Id == courseId))
-            return BadRequest("course was not found");
+        var userName = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+        var getResponse = await _unitOfWork.CourseService.EnrollStudentInCourse(courseId, studentId, userName);
 
-
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var getStudentId = await _unitOfWork.Students.AsQuerable()
-                                                     .FirstAsync(x => x.IdentityId == userId);
-        var getUserId = await _unitOfWork.Students.AsQuerable()
-                                                  .Where(a => a.IdentityId == userId)
-                                                  .Select(x => x.Id)
-                                                  .FirstOrDefaultAsync();
-
-        var studentCourseExist = await _unitOfWork.CourseStudents.AnyAsync(x => x.CourseId == courseId && x.StudentId == getUserId);
-
-        if (studentCourseExist)
-            return BadRequest("Student Enrolled in this course before");
-
-        var studentCoures = new CourseStudent
-        {
-            CourseId = courseId,
-            StudentId = getStudentId.Id,
-            CreatedBy = userId!,
-        };
-
-        await _unitOfWork.CourseStudents.AddAsync(studentCoures);
-        await _unitOfWork.Complete();
-
-
-        return Ok();
+        return Ok(getResponse);
     }
 
     [HttpPost("create"), Authorize(Policy = UserRole.Instructor)]
@@ -73,51 +47,36 @@ public class CoursesController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(model);
 
-        var course = new Course
+        var response = await _unitOfWork.CourseService.CreateNewCourse(model);
+        if (response.IsSuccess)
         {
-            Description = model.Description,
-            Name = model.Name,
-            CreatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
-            CreatedDate = DateTime.UtcNow,
-        };
-        await _unitOfWork.Courses.AddAsync(course);
-        var result = await _unitOfWork.Complete();
-
-        return result > 0 ? Ok(result) : BadRequest("Something went wrong");
+            return Ok(response);
+        }
+        return BadRequest(response);
     }
     [HttpPut("update"), Authorize(Policy = UserRole.Instructor)]
     public async Task<ActionResult> Update([FromBody] UpdateCourseViewModel model)
     {
         if (!ModelState.IsValid)
-
             return BadRequest(model);
-
-        var course = new Course
+        var response = await _unitOfWork.CourseService.UpdateCourse(model);
+        if (response.IsSuccess)
         {
-            UpdatedBy = User.FindFirstValue(ClaimTypes.NameIdentifier)!,
-            Description = model.Description,
-            Name = model.Name,
-            Id = model.Id
-        };
-        _unitOfWork.Courses.SaveInclude(course, nameof(Course.UpdatedBy), nameof(Course.Name), nameof(Course.Description));
-        var result = await _unitOfWork.Complete();
+            return Ok(response);
+        }
+        return BadRequest(response);
 
-        return result > 0 ? Ok(result) : BadRequest("Something went wrong");
     }
     [HttpDelete("delete/{courseId}"), Authorize(Policy = UserRole.Instructor)]
     public async Task<ActionResult> Delete(int courseId)
     {
-        var course = await _unitOfWork.Courses.GetById(courseId);
-        if (course.isDeleted)
-            return BadRequest("The course has already been removed");
+        var response = await _unitOfWork.CourseService.DeleteCourse(courseId);
+        if (response.IsSuccess)
+        {
+            return Ok(response);
+        }
 
-        if (await _unitOfWork.CourseStudents.AnyAsync(x=>x.CourseId == courseId))
-            return BadRequest("Students are already enrolled in this course, so it cannot be deleted.");
- 
-        _unitOfWork.Courses.SoftDelete(course);
-        await _unitOfWork.Complete();
-
-        return Ok();
+        return BadRequest(response);
 
     }
 }

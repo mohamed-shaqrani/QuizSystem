@@ -1,6 +1,7 @@
 ﻿using Core.Models;
 using Infrastructure.GenericRepository;
 using Infrastructure.Services;
+using Infrastructure.Services.CourseService;
 
 namespace Infrastructure.UnitOfWork;
 public interface IUnitOfWork : IDisposable
@@ -11,6 +12,7 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<CourseStudent> CourseStudents { get; }
     IGenericRepository<CourseInstructor> CourseInstructors { get; }
     IExamService<Exam> ExamService { get; }
+    ICourseServicee<Course> CourseService { get; }
 
     IGenericRepository<Course> Courses { get; }
     IGenericRepository<Exam> Exams { get; }

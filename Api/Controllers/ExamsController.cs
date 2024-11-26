@@ -3,6 +3,7 @@ using AutoMapper.QueryableExtensions;
 using Core.Models;
 using Core.ViewModels;
 using Core.ViewModels.ExamViewModels;
+using Core.ViewModels.ExamViewModels.Quiz;
 using Infrastructure.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -97,5 +98,14 @@ public class ExamsController : ControllerBase
         return BadRequest(result);
     }
 
+    public async Task<ActionResult<ResponseViewModel<int>>> TakeQuiz([FromBody] TakeQuizViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        var result =_unitOfWork.ExamService.TakeQuiz(model);
+        return Ok(result);
+    }
 
 }

@@ -1,7 +1,9 @@
-﻿using Core.Enum;
+﻿using Core.Constants;
+using Core.Enum;
 using Core.Models;
 using Core.ViewModels;
 using Core.ViewModels.ExamViewModels;
+using Core.ViewModels.ExamViewModels.Quiz;
 using Core.ViewModels.QuestionViewModels;
 using Core.ViewModels.QuestionViewModels.ChoiceViewMode;
 using Infrastructure.Data;
@@ -17,7 +19,64 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
     {
         _context = context;
     }
+    public async Task<ResponseViewModel<int>> TakeQuiz(TakeQuizViewModel model)
+    {
+        var response = new ResponseViewModel<int>();
+        if (!await isStudentEnrolledInCourse(model.StudentId, model.CourseId, response))
+        {
+            return response;
+        }
+        if (!await isEnrollmentValid(model.QuizId,model.CourseId,response))
+        {
+            return response;
+        }
 
+        var exam = new Exam
+        {
+            IsEnrolled = true,
+            Id = model.QuizId,
+        };
+        _context.Exams.Update(exam);
+        var result = await _context.SaveChangesAsync() > 0;
+        if (result)
+        {
+            response.IsSuccess = true;
+            return response;
+        }
+
+        return DataBaseError.DataBaseErrorResponse(response);
+    }
+    public async Task<bool> isStudentEnrolledInCourse(int studentId, int courseId, ResponseViewModel<int> response)
+    {
+        var isStudentEnrolledInCourse = await _context.CourseStudents
+                                                  .AnyAsync(cs => cs.StudentId == studentId && cs.CourseId == courseId);
+        if (!isStudentEnrolledInCourse)
+        {
+            response.ErrorCode = ErrorCode.StudentsNotEnrolledInCourse;
+            response.Message = "Student  Not Enrolled In this Course to take quiz";
+            response.IsSuccess = false;
+            return false;
+        }
+        response.IsSuccess = true;
+        return true;
+    }
+    public async Task<bool> isEnrollmentValid(int quizId, int courseId, ResponseViewModel<int> response)
+    {
+        var isEnrollmentValid = await _context.Exams
+                                       .AnyAsync(exam =>
+                                           exam.CourseId == courseId &&
+                                           exam.Id == quizId &&
+                                           exam.EnrollmentEndDate > DateTime.UtcNow);
+        if (!isEnrollmentValid)
+        {
+            response.ErrorCode = ErrorCode.NotFound;
+            response.Message = "Quiz not found or it's too late to take this quiz";
+            response.IsSuccess = false;
+            return false;
+        }
+        response.IsSuccess = true;
+        return true;
+    }
     public async Task<ResponseViewModel<int>> AssignStudents(AssignExamToStudentsViewModel model)
     {
         var response = new ResponseViewModel<int>();

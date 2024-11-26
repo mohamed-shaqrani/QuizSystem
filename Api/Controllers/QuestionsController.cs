@@ -5,7 +5,7 @@ using Infrastructure.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers;
-[Route("api/questions")]
+[Route("api/questions/")]
 [ApiController]
 public class QuestionsController : ControllerBase
 {
@@ -15,7 +15,7 @@ public class QuestionsController : ControllerBase
     {
         _unitOfWork = unitOfWork;
     }
-    [HttpGet("/{instructorId}/{courseId}")]
+    [HttpGet("{instructorId}/{courseId}")]
     public async Task<ActionResult> GetAllQuestionsWithChoices(int instructorId, int courseId)
     {
         var res = await _unitOfWork.QuestionService.GetAllQuestions(instructorId, courseId);

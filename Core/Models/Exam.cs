@@ -7,9 +7,11 @@ public class Exam : BaseModel
     public int? DurationInMinutes { get; set; }
     public DateTime? StartDateTime { get; set; }
     public bool IsActive { get; set; }
+    public bool IsEnrolled { get; set; }
+    public bool IsSubmitted { get; set; }
     public string Description { get; set; }
     public int MaxScore { get; set; }
-
+    public DateTime? EnrollmentEndDate { get; set; }
     public ExamType ExamType { get; set; }
     public int NumberOfQuestions { get; set; }
     public bool IsManualAssignment { get; set; }

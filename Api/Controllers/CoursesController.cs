@@ -1,5 +1,4 @@
 ﻿using Core.Constants;
-using Core.Models;
 using Core.ViewModels.CourseViewModel;
 using Infrastructure.UnitOfWork;
 using Microsoft.AspNetCore.Authorization;

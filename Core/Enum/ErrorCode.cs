@@ -2,6 +2,7 @@
 public enum ErrorCode
 {
     NoError = 0,
+
     InstructorNotAssignedToCourse = 1,
     InvalidQuestionIds = 2,
     DatabaseSaveError = 3,
@@ -13,6 +14,10 @@ public enum ErrorCode
     UnbalancedDifficulty = 9,
     CourseNotFoundError = 10,
     CourseAlreadyExist,
-    StudentsAlreadyEnrolledInCourse
-
+    StudentsAlreadyEnrolledInCourse,
+    QuestionCourseInstructorAlreadyExist,
+    InvalidCorrectAnswerCount,
+    InsufficientChoices,
+    NotFound,
+    ItemAlreadyDeltedBefore,
 }

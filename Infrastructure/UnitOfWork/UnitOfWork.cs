@@ -4,6 +4,7 @@ using Infrastructure.GenericRepository;
 using Infrastructure.Services;
 using Infrastructure.Services.CourseService;
 using Infrastructure.Services.ExamService;
+using Infrastructure.Services.QuestionService;
 
 namespace Infrastructure.UnitOfWork;
 public class UnitOfWork : IUnitOfWork
@@ -23,7 +24,11 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<CourseStudent> CourseStudents { get; private set; }
     public IGenericRepository<CourseInstructor> CourseInstructors { get; private set; }
     public IExamService<Exam> ExamService { get; private set; }
+    public IQuestionService<Question> QuestionService { get; private set; }
+
     public ICourseServicee<Course> CourseService { get; private set; }
+
+    public IGenericRepository<Choice> Choices { get; private set; }
 
     public UnitOfWork(AppDbContext context)
     {
@@ -37,7 +42,9 @@ public class UnitOfWork : IUnitOfWork
         CourseStudents = new GenericRepository<CourseStudent>(_context);
         CourseInstructors = new GenericRepository<CourseInstructor>(_context);
         ExamService = new ExamService<Exam>(_context);
+        Choices = new GenericRepository<Choice>(_context);
         CourseService = new CourseService<Course>(this);
+        QuestionService = new QuestionService<Question>(this);
 
     }
     public async Task<int> Complete()

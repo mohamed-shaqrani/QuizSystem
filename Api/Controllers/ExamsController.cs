@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Core.Enum;
 using Core.Models;
 using Core.ViewModels;
 using Core.ViewModels.ExamViewModels;
@@ -41,7 +42,7 @@ public class ExamsController : ControllerBase
     public async Task<ActionResult<Exam>> GetAllInstuctorExams(int instructorId)
     {
         var exam = await _unitOfWork.Exams.AsQuerable()
-                                            .Where(x=>x.InstructorId == instructorId)
+                                            .Where(x => x.InstructorId == instructorId)
                                            .Include(e => e.ExamQuestions)
                                            .ThenInclude(eq => eq.Question)
                                            .ThenInclude(eq => eq.Choices)
@@ -97,15 +98,24 @@ public class ExamsController : ControllerBase
         }
         return BadRequest(result);
     }
-
+    [HttpPost("take-quiz")]
     public async Task<ActionResult<ResponseViewModel<int>>> TakeQuiz([FromBody] TakeQuizViewModel model)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
-        var result =_unitOfWork.ExamService.TakeQuiz(model);
-        return Ok(result);
+        var result = await _unitOfWork.ExamService.TakeQuiz(model);
+        if (result.IsSuccess)
+        {
+            return Ok(result);
+
+        }
+        if (result.ErrorCode != ErrorCode.DatabaseSaveError)
+        {
+            return StatusCode(((int)result.ErrorCode), result);
+        }
+        return BadRequest(result);
     }
 
 }

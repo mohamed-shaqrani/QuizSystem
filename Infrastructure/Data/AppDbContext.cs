@@ -22,6 +22,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
 
     public DbSet<Answer> Answers { get; set; }
     public DbSet<Choice> Choices { get; set; }
+    public DbSet<ExamStudent> ExamStudents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

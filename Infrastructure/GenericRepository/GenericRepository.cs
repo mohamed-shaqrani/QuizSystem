@@ -14,17 +14,25 @@ public class GenericRepository<Entity> : IGenericRepository<Entity> where Entity
     public GenericRepository(AppDbContext context)
     {
         _Context = context;
-        _dbSet = _Context.Set<Entity>(); // Initialize _dbSet here
+        _dbSet = _Context.Set<Entity>();
 
     }
     public async Task<IEnumerable<Entity>> GetAllAsync()
     {
-        // Use AsNoTracking for read-only queries for better performance
         return await _dbSet.AsNoTracking().ToListAsync();
     }
+    public async Task AddRange(IEnumerable<Entity> entities)
+    {
+        if (entities == null)
+        {
+            throw new ArgumentNullException(nameof(entities), "Entities cannot be null");
+        }
+
+        await _dbSet.AddRangeAsync(entities);
+    }
+
     public async Task<IEnumerable<Entity>> GetAllAsyncWithSpecefic(Expression<Func<Entity, bool>> expression)
     {
-        // Use AsNoTracking for read-only queries for better performance
         return await _dbSet.AsNoTracking().Where(expression).ToListAsync();
     }
     public IQueryable<Entity> AsQuerable()
@@ -32,7 +40,7 @@ public class GenericRepository<Entity> : IGenericRepository<Entity> where Entity
 
     public async Task<Entity> GetById(int id)
         => await _Context.Set<Entity>().FirstOrDefaultAsync(x => x.Id == id);
-  
+
     public async Task AddAsync(Entity entity)
         => await _Context.Set<Entity>().AddAsync(entity);
 
@@ -81,6 +89,11 @@ public class GenericRepository<Entity> : IGenericRepository<Entity> where Entity
     {
         entity.isDeleted = true;
         SaveInclude(entity, nameof(BaseModel.isDeleted));
+    }
+
+    public IQueryable<IEnumerable<Entity>> AsQuerableAll()
+    {
+        return _Context.Set<IEnumerable<Entity>>().AsQueryable();
     }
 }
 

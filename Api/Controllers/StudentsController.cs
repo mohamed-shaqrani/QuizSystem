@@ -1,4 +1,5 @@
 ﻿using Core.Models;
+using Core.ViewModels.ExamViewModels;
 using Infrastructure.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,13 @@ public class StudentsController : ControllerBase
     public async Task<ActionResult> GetStudentsss()
     {
         var result = await _unitOfWork.Courses.AsQuerable().Select(x => x.Name).ToListAsync();
+        return Ok(result);
+    }
+    [HttpGet("upcoming-exams/{studentId}")]
+    public async Task<ActionResult<ExamViewModel>> GetStudentUpcomingExams(int studentId)
+    {
+        var result = await _unitOfWork.ExamService.GetStudentUpcomingExams(studentId);
+
         return Ok(result);
     }
 }

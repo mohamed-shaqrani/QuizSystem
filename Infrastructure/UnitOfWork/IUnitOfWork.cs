@@ -18,8 +18,10 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Course> Courses { get; }
     IGenericRepository<Exam> Exams { get; }
+    IGenericRepository<ExamStudent> ExamStudents { get; }
+
     IGenericRepository<Question> Questions { get; }
-    IGenericRepository<Choice> Choices  { get; }
+    IGenericRepository<Choice> Choices { get; }
 
     IGenericRepository<Answer> Answers { get; }
 

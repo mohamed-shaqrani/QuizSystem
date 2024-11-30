@@ -4,6 +4,7 @@ using Core.Models;
 using Core.ViewModels;
 using Core.ViewModels.CourseViewModel;
 using Infrastructure.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services.CourseService;
 public class CourseService<Entity> : ICourseServicee<Entity> where Entity : class
@@ -14,7 +15,20 @@ public class CourseService<Entity> : ICourseServicee<Entity> where Entity : clas
     {
         _unitOfWork = unitOfWork;
     }
+    public async Task<ResponseViewModel<object>> GetAllInstructorCourses()
+    {
+        var res = await _unitOfWork.CourseInstructors.AsQuerable().Select(x => new
+        {
+            InstructorId = x.InstructorId,
+            CourseId = x.CourseId,
+            InstructorName = x.Instructor.FirstName + " " + x.Instructor.LastName,
+            course = x.Course.Name,
 
+        }).GroupBy(x => x.InstructorId).ToListAsync();
+        var response = new ResponseViewModel<object>();
+        response.Data = res;
+        return response;
+    }
     public async Task<ResponseViewModel<int>> EnrollStudentInCourse(int courseId, int studentId, string userName)
     {
         var response = new ResponseViewModel<int>();
@@ -40,8 +54,14 @@ public class CourseService<Entity> : ICourseServicee<Entity> where Entity : clas
         };
 
         await _unitOfWork.CourseStudents.AddAsync(studentCoures);
-        await _unitOfWork.Complete();
-        return response;
+        var result = await _unitOfWork.Complete() > 0;
+        if (result)
+        {
+            response.IsSuccess = true;
+            return response;
+        }
+
+        return DataBaseError.DataBaseErrorResponse(response);
     }
     private async Task<bool> DoesCourseExist(int courseId)
     {
@@ -150,7 +170,7 @@ public class CourseService<Entity> : ICourseServicee<Entity> where Entity : clas
     }
     private async Task<bool> DoesCourseHasEnrolledStudents(int courseId)
     {
-        return await _unitOfWork.CourseStudents.AnyAsync(x => x.CourseId == courseId && !x.isDeleted);
+        return await _unitOfWork.CourseStudents.AnyAsync(x => x.CourseId == courseId && !x.IsDeleted);
 
     }
 }

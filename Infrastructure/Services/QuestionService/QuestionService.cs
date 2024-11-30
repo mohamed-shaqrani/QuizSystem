@@ -153,7 +153,7 @@ public class QuestionService<Entity> : IQuestionService<Entity> where Entity : c
         var response = new ResponseViewModel<int>();
 
         var getQuestion = await _unitOfWork.Questions.GetById(id);
-        if (getQuestion is not null && !getQuestion.isDeleted)
+        if (getQuestion is not null && !getQuestion.IsDeleted)
         {
             _unitOfWork.Questions.SoftDelete(getQuestion);
             var result = await _unitOfWork.Complete() > 0;
@@ -170,7 +170,7 @@ public class QuestionService<Entity> : IQuestionService<Entity> where Entity : c
             }
 
         }
-        if (getQuestion.isDeleted)
+        if (getQuestion.IsDeleted)
         {
             response.IsSuccess = false;
             response.ErrorCode = ErrorCode.ItemAlreadyDeltedBefore;

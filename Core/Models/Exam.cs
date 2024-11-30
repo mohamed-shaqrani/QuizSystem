@@ -1,8 +1,11 @@
 ﻿using Core.Enum;
+using System.ComponentModel.DataAnnotations;
 
 namespace Core.Models;
 public class Exam : BaseModel
 {
+    [Required, StringLength(250)]
+
     public string Title { get; set; }
     public int? DurationInMinutes { get; set; }
     public DateTime? StartDateTime { get; set; }
@@ -14,7 +17,6 @@ public class Exam : BaseModel
     public DateTime? EnrollmentEndDate { get; set; }
     public ExamType ExamType { get; set; }
     public int NumberOfQuestions { get; set; }
-    public bool IsManualAssignment { get; set; }
     public int CourseId { get; set; }
 
     public Course Course { get; set; }

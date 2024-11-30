@@ -9,6 +9,7 @@ public interface ICourseServicee<Entity> where Entity : class
 
     Task<ResponseViewModel<int>> UpdateCourse(UpdateCourseViewModel model);
     Task<ResponseViewModel<int>> DeleteCourse(int courseId);
+    Task<ResponseViewModel<object>> GetAllInstructorCourses();
 
 
 }

@@ -87,8 +87,8 @@ public class GenericRepository<Entity> : IGenericRepository<Entity> where Entity
        => await _Context.Set<Entity>().Where(expression).ExecuteDeleteAsync();
     public void SoftDelete(Entity entity)
     {
-        entity.isDeleted = true;
-        SaveInclude(entity, nameof(BaseModel.isDeleted));
+        entity.IsDeleted = true;
+        SaveInclude(entity, nameof(BaseModel.IsDeleted));
     }
 
     public IQueryable<IEnumerable<Entity>> AsQuerableAll()

@@ -1,9 +1,14 @@
 ﻿using Core.Enum;
+using System.ComponentModel.DataAnnotations;
 
 namespace Core.Models;
 public class Question : BaseModel
 {
+    [Required]
+
     public string Text { get; set; }
+    [Required]
+
     public DifficultyLevel Level { get; set; }
 
     public int CourseId { get; set; }

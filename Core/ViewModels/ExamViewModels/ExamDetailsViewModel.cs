@@ -4,7 +4,7 @@ using Core.Enum;
 using Core.Models;
 using Core.ViewModels.ChoiceViewModels;
 using Core.ViewModels.QuestionViewModels;
-public  class ExamDetailsViewModel
+public class ExamDetailsViewModel
 {
     public string Title { get; set; }
     public int? DurationInMinutes { get; set; }
@@ -18,13 +18,14 @@ public  class ExamDetailsViewModel
     public bool IsManualAssignment { get; set; }
     public int CourseId { get; set; }
     public List<QuestionDetailsViewModel> QuestionViewModels { get; set; }
-    
+
 }
 public static class ExamExtensions
 {
-    public static ExamDetailsViewModel ToDetailsViewModel(this Exam exam)
+    public static IEnumerable<ExamDetailsViewModel> ToDetailsViewModel(this IQueryable<Exam> exams)
     {
-        return new ExamDetailsViewModel
+
+        return exams.Select(exam => new ExamDetailsViewModel
         {
             IsActive = exam.IsActive,
             Description = exam.Description,
@@ -34,7 +35,6 @@ public static class ExamExtensions
             MaxScore = exam.MaxScore,
             StartDateTime = exam.StartDateTime,
             Title = exam.Title,
-            IsManualAssignment = exam.IsManualAssignment,
             DurationInMinutes = exam.DurationInMinutes,
             QuestionViewModels = exam.ExamQuestions.Select(eq => new QuestionDetailsViewModel
             {
@@ -47,6 +47,8 @@ public static class ExamExtensions
                     Text = choice.Text
                 }).ToList()
             }).ToList()
-        };
+        });
+
+
     }
 }

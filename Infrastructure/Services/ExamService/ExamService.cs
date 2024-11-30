@@ -1,5 +1,4 @@
-﻿using Core.Constants;
-using Core.Enum;
+﻿using Core.Enum;
 using Core.Models;
 using Core.ViewModels;
 using Core.ViewModels.ExamViewModels;
@@ -23,9 +22,10 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         return await _unitOfWork.ExamStudents.AsQuerable()
                                              .Where(x => x.StudentId == studentId
                                                       && x.Exam.StartDateTime > DateTime.UtcNow
-                                                      && !x.isDeleted)
+                                                      && !x.IsDeleted)
                                              .Select(x => new ExamViewModel
                                              {
+                                                 ExamId = x.Exam.Id,
                                                  Description = x.Exam.Description,
                                                  IsEnrolled = x.Exam.IsEnrolled,
                                                  DurationInMinutes = x.Exam.DurationInMinutes,
@@ -34,34 +34,47 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
                                                  Title = x.Exam.Title
                                              }).ToListAsync();
     }
-    public async Task<ResponseViewModel<int>> TakeQuiz(TakeQuizViewModel model)
+    public async Task<ResponseViewModel<ExamDetailsViewModel>> TakeQuiz(TakeQuizViewModel model)
     {
-        var response = new ResponseViewModel<int>();
-        if (!await isStudentEnrolledInCourse(model.StudentId, model.CourseId, response))
+        var response = new ResponseViewModel<ExamDetailsViewModel>();
+        if (!await IsStudentEnrolledInCourse(model.StudentId, model.CourseId, response))
         {
             return response;
         }
-        if (!await isEnrollmentValid(model.QuizId, model.CourseId, response))
+        if (!await IsEnrollmentValid(model, response))
         {
             return response;
         }
+        var examDetail = _unitOfWork.Exams.AsQuerable()
+                                          .Where(x => x.Id == model.QuizId)
+                                          .ToDetailsViewModel()
+                                          .FirstOrDefault();
 
-        var exam = new Exam
+        var id = _unitOfWork.ExamStudents.AsQuerable()
+                                          .Where(x => x.ExamId == model.QuizId && x.StudentId == model.StudentId)
+                                          .Select(x => x.Id)
+                                          .FirstOrDefault();
+
+        var examStudent = new ExamStudent
         {
             IsEnrolled = true,
-            Id = model.QuizId,
+            EnrollDate = DateTime.UtcNow,
+            UpdatedBy = "student Name",
+            UpdatedDate = DateTime.UtcNow,
+            Id = id,
         };
-        _unitOfWork.Exams.Update(exam);
+        _unitOfWork.ExamStudents.SaveInclude(examStudent, nameof(ExamStudent.IsEnrolled));
         var result = await _unitOfWork.Complete() > 0;
         if (result)
         {
             response.IsSuccess = true;
+            response.Data = examDetail;
             return response;
         }
+        return response;
 
-        return DataBaseError.DataBaseErrorResponse(response);
     }
-    public async Task<bool> isStudentEnrolledInCourse(int studentId, int courseId, ResponseViewModel<int> response)
+    private async Task<bool> IsStudentEnrolledInCourse(int studentId, int courseId, ResponseViewModel<ExamDetailsViewModel> response)
     {
         var isStudentEnrolledInCourse = await _unitOfWork.CourseStudents
                                                   .AnyAsync(cs => cs.StudentId == studentId && cs.CourseId == courseId);
@@ -75,17 +88,30 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         response.IsSuccess = true;
         return true;
     }
-    public async Task<bool> isEnrollmentValid(int quizId, int courseId, ResponseViewModel<int> response)
+    private async Task<bool> IsEnrollmentValid(TakeQuizViewModel model, ResponseViewModel<ExamDetailsViewModel> response)
     {
         var isEnrollmentValid = await _unitOfWork.Exams
                                        .AnyAsync(exam =>
-                                           exam.CourseId == courseId &&
-                                           exam.Id == quizId &&
-                                           exam.EnrollmentEndDate > DateTime.UtcNow);
+                                           exam.CourseId == model.CourseId &&
+                                           exam.Id == model.QuizId &&
+                                           exam.EnrollmentEndDate > DateTime.UtcNow
+                                           && exam.StartDateTime < DateTime.UtcNow
+
+                                           );
         if (!isEnrollmentValid)
         {
             response.ErrorCode = ErrorCode.NotFound;
-            response.Message = "Quiz not found or it's too late to take this quiz";
+            response.Message = "Quiz not found or it's too late to take this quiz or you already enrolled in this exam before";
+            response.IsSuccess = false;
+            return false;
+        }
+        var isStudentEnrolledInExam = await _unitOfWork.ExamStudents.AnyAsync(cs => cs.StudentId == model.StudentId
+                                                                                && cs.ExamId == model.QuizId &&
+                                                                                cs.IsEnrolled == true);
+        if (isStudentEnrolledInExam)
+        {
+            response.ErrorCode = ErrorCode.NotFound;
+            response.Message = "you already enrolled in this exam before";
             response.IsSuccess = false;
             return false;
         }
@@ -99,10 +125,12 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
                                                    .Select(x => x.CourseId)
                                                    .FirstOrDefaultAsync();
 
-        var studentIds = await _unitOfWork.CourseStudents.AsQuerable().Where(x => x.CourseId == getCouseIdOfExam
-                                                         && model.StudentIds.All(a => a == x.StudentId))
-                                                        .Select(x => x.StudentId)
-                                                      .ToListAsync();
+        var studentIds = await _unitOfWork.CourseStudents.AsQuerable()
+
+                                                   .Where(x => x.CourseId == getCouseIdOfExam && model.StudentIds.Contains(x.StudentId))
+                                                   .Select(x => x.StudentId)
+                                                   .ToListAsync();
+
         if (studentIds.Any())
         {
             return await AssignStudentsToExamAsync(model, response, studentIds);
@@ -120,7 +148,6 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
 
     private async Task<ResponseViewModel<int>> AssignStudentsToExamAsync(AssignExamToStudentsViewModel model, ResponseViewModel<int> response, List<int> studentIds)
     {
-        var ExamStduentList = new List<ExamStudent>();
 
         var studentsToAssign = studentIds.Select(studentId => new ExamStudent
         {
@@ -129,7 +156,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
             CreatedBy = model.InstructorUserName,
         }).ToList();
 
-        await _unitOfWork.ExamStudents.AddRange(ExamStduentList);
+        await _unitOfWork.ExamStudents.AddRange(studentsToAssign);
         var result = await _unitOfWork.Complete() > 0;
         if (result)
         {
@@ -146,20 +173,20 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
     public async Task<ResponseViewModel<int>> CreateRandomExam(CreateRandomExam model)
     {
         var result = await _unitOfWork.Questions.AsQuerable().Where(x => x.InstructorId == model.InstructorId
-                                                         && x.CourseId == model.CourseId)
-                                            .Include(x => x.Choices)
-                                            .Select(x => new RandomQuestionViewModel
-                                            {
+                                                                       && x.CourseId == model.CourseId)
+                                                                    .Include(x => x.Choices)
+                                                                    .Select(x => new RandomQuestionViewModel
+                                                                    {
 
-                                                QuestionId = x.Id,
-                                                DifficultyLevel = x.Level,
-                                                ChoicesViewModel = x.Choices.Select(choice => new ChoicesViewModel
-                                                {
-                                                    Id = choice.Id,
+                                                                        QuestionId = x.Id,
+                                                                        DifficultyLevel = x.Level,
+                                                                        ChoicesViewModel = x.Choices.Select(choice => new ChoicesViewModel
+                                                                        {
+                                                                            Id = choice.Id,
 
-                                                }).ToList(),
-                                            })
-                                            .ToListAsync();
+                                                                        }).ToList(),
+                                                                    })
+                                                                    .ToListAsync();
         var response = await ValidateRandomExam(result, model);
         if (!response.IsSuccess)
             return response;
@@ -177,7 +204,11 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
             ExamType = ExamType.Final,
             IsRandom = true,
             Title = "",
+            NoOfQuestionstions = quetionIds.Count(),
             InstructorUserName = model.InstructorUserName,
+            EnrollemntEndDate = model.EnrollemntEndDate,
+            EnrollemntStartDate = model.EnrollemntStartDate,
+
             QuestionPools = questions.Select(x => new QuestionViewModel
             {
                 Marks = x.Grade,
@@ -220,7 +251,7 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
         return newBalancedRandomQuestionIds;
     }
 
-    public async Task<ResponseViewModel<int>> ValidateRandomExam(List<RandomQuestionViewModel> result, CreateRandomExam createRandom)
+    private async Task<ResponseViewModel<int>> ValidateRandomExam(List<RandomQuestionViewModel> result, CreateRandomExam createRandom)
     {
         var response = new ResponseViewModel<int>();
         if (!result.Any() || result.Count < 3)
@@ -293,6 +324,9 @@ public class ExamService<Entity> : IExamService<Entity> where Entity : class
             CreatedBy = model.InstructorUserName,
             MaxScore = model.QuestionPools.Sum(s => s.Marks),
             IsRandom = model.IsRandom,
+            NumberOfQuestions = model.NoOfQuestionstions,
+            EnrollmentEndDate = model.EnrollemntEndDate,
+            StartDateTime = model.EnrollemntStartDate,
             ExamQuestions = questionPools.Select(eq => new ExamQuestion
             {
                 QuestionId = eq.Id,

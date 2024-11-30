@@ -7,7 +7,8 @@ internal sealed class StudentConfig : IEntityTypeConfiguration<Student>
 {
     public void Configure(EntityTypeBuilder<Student> builder)
     {
-        builder.HasQueryFilter(x => !x.isDeleted);
+        builder.HasQueryFilter(x => !x.IsDeleted);
+        builder.Property(x=>x.Id).ValueGeneratedNever();
 
     }
 }

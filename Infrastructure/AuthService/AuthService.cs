@@ -56,8 +56,9 @@ public class AuthService : IAuthService
 
         }
         await _userManager.AddToRoleAsync(user, role);
-        var jwtSecruityToken = await CreateJwtToken(user);
-        await CreateNewUser(model, user, role);
+        var userInfo = await CreateNewUser(model, user, role);
+
+        var jwtSecruityToken = await CreateJwtToken(user, userInfo.Item1, userInfo.Item2);
 
         return new AuthModel
         {
@@ -72,32 +73,36 @@ public class AuthService : IAuthService
 
     }
 
-    private async Task CreateNewUser(RegisterModel model, AppUser user, string role)
+    private async Task<(int, string)> CreateNewUser(RegisterModel model, AppUser user, string role)
     {
+        int id = 0;
         if (role == UserRole.Student)
         {
             var student = new Student
             {
+                IdentityId = user.Id,
+
                 Address = model.Address,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 CreatedDate = DateTime.UtcNow,
                 Mobile = model.Mobile,
-                IdentityId = user.Id,
                 CreatedBy = user.UserName,
             };
             await _unitOfWork.Students.AddAsync(student);
+            await _unitOfWork.Complete();
+
+            id = student.Id;
 
         }
         else
         {
             var instructor = new Instructor
             {
-
+                IdentityId = user.Id,
                 Address = model.Address,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
-                IdentityId = user.Id,
                 CreatedDate = DateTime.UtcNow,
                 CreatedBy = model.UserName,
                 Mobile = model.Mobile,
@@ -105,13 +110,15 @@ public class AuthService : IAuthService
 
             };
             await _unitOfWork.Instructors.AddAsync(instructor);
+            await _unitOfWork.Complete();
 
+            id = instructor.Id;
 
         }
-        await _unitOfWork.Complete();
+        return (id, role);
     }
 
-    public async Task<JwtSecurityToken> CreateJwtToken(AppUser user)
+    public async Task<JwtSecurityToken> CreateJwtToken(AppUser user, int userId, string userRole)
     {
         var userClaim = await _userManager.GetClaimsAsync(user);
         var roles = await _userManager.GetRolesAsync(user);
@@ -125,8 +132,9 @@ public class AuthService : IAuthService
         var claims = new[]
         {
                new Claim(JwtRegisteredClaimNames.GivenName,$"{ user.UserName} "),
-               new Claim(ClaimTypes.NameIdentifier,$"{ user.Id} "),
                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+               new Claim(ClaimTypes.NameIdentifier,$"{ userId} "),
+
         }.Union(roleClaims).Union(userClaim);
 
         var symtricSecruityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
@@ -152,14 +160,30 @@ public class AuthService : IAuthService
             authModel.Message = $"Email or Password is incorrect ";
             return authModel;
         }
-        authModel.IsAuthenticated = true;
-        var jwtSecurityToken = await CreateJwtToken(user);
-        authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-        authModel.Email = user.Email;
-        authModel.UserName = user.UserName;
-        authModel.ExpiresOn = jwtSecurityToken.ValidTo;
         var roleList = await _userManager.GetRolesAsync(user);
         authModel.Roles = roleList.ToList();
+
+        authModel.IsAuthenticated = true;
+        if (roleList.Contains(UserRole.Student))
+        {
+            var studentId = _unitOfWork.Students.AsQuerable().Where(x => x.IdentityId == user.Id).Select(x => x.Id).FirstOrDefault();
+
+            var jwtSecurityToken = await CreateJwtToken(user, studentId, UserRole.Student);
+            authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+            authModel.ExpiresOn = jwtSecurityToken.ValidTo;
+
+        }
+        else
+        {
+            var instructorId = _unitOfWork.Instructors.AsQuerable().Where(x => x.IdentityId == user.Id).Select(x => x.Id).FirstOrDefault();
+
+            var jwtSecurityToken = await CreateJwtToken(user, instructorId, UserRole.Instructor);
+            authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+            authModel.ExpiresOn = jwtSecurityToken.ValidTo;
+        }
+        authModel.Email = user.Email;
+        authModel.UserName = user.UserName;
+
 
         return authModel;
     }

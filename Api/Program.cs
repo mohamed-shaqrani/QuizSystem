@@ -1,10 +1,7 @@
 using Api.Extensions;
 using Api.Middlewares;
-using Core.Models;
-using Core.Seeding;
 using Infrastructure.AuthService;
 using Infrastructure.Data;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,17 +30,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<AppDbContext>();
-    var authService = services.GetRequiredService<IAuthService>();
-    var userManager = services.GetRequiredService<UserManager<AppUser>>();
+//using (var scope = app.Services.CreateScope())
+//{
+//    var services = scope.ServiceProvider;
+//    var context = services.GetRequiredService<AppDbContext>();
+//    var authService = services.GetRequiredService<IAuthService>();
+//    var userManager = services.GetRequiredService<UserManager<AppUser>>();
 
-    await SeedData.SeedInstructorsAndCourseInstructors(context, authService, userManager);
-    SeedQuestions.SeedQuestionsForCourses(context);
+//    await SeedData.SeedInstructorsAndCourseInstructors(context, authService, userManager);
+//    SeedQuestions.SeedQuestionsForCourses(context);
 
-}
+//}
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

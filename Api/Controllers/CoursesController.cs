@@ -32,10 +32,21 @@ public class CoursesController : ControllerBase
         return Ok(result);
     }
     [HttpGet("enroll-course/{courseId}"), Authorize(Policy = UserRole.Student)]
-    public async Task<ActionResult> EnrollInCourse(int courseId, int studentId)
+    public async Task<ActionResult> EnrollInCourse(int courseId)
     {
-        var userName = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+        var userName = User.FindFirst(ClaimTypes.GivenName)!.Value;
+        var studentId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
         var getResponse = await _unitOfWork.CourseService.EnrollStudentInCourse(courseId, studentId, userName);
+
+        return Ok(getResponse);
+    }
+    [HttpGet("all-instructor-courses")]
+    public async Task<ActionResult> CourseInstructor()
+    {
+
+
+        var getResponse = await _unitOfWork.CourseService.GetAllInstructorCourses();
 
         return Ok(getResponse);
     }

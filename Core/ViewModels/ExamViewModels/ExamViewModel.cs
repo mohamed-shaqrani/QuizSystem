@@ -1,6 +1,7 @@
 ﻿namespace Core.ViewModels.ExamViewModels;
 public class ExamViewModel
 {
+    public int ExamId { get; set; }
     public string Title { get; set; }
     public DateTime? StartDateTime { get; set; }
     public DateTime? EnrollmentEndDate { get; set; }

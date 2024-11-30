@@ -61,8 +61,8 @@ public class ExamsController : ControllerBase
     public async Task<ActionResult<ResponseViewModel<int>>> Create([FromBody] CreateExamViewModel model)
     {
         var ins = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-        var insId = _unitOfWork.Instructors.AsQuerable().FirstOrDefault(x => x.IdentityId == ins);
-        model.InstructorId = insId.Id;
+        //var insId = _unitOfWork.Instructors.AsQuerable().FirstOrDefault(x => x.IdentityId == ins);
+        model.InstructorId = 1;// insId.Id;
         model.InstructorUserName = User.FindFirst(ClaimTypes.GivenName).Value;
         var result = await _unitOfWork.ExamService.CreateQuizOrFinal(model);
         if (result.IsSuccess)
@@ -74,10 +74,9 @@ public class ExamsController : ControllerBase
     [HttpPost("create-random")]
     public async Task<ActionResult<ResponseViewModel<int>>> CreateRandom([FromBody] CreateRandomExam model)
     {
-        var ins = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-        var insId = _unitOfWork.Instructors.AsQuerable().FirstOrDefault(x => x.IdentityId == ins);
-        model.InstructorId = insId.Id;
+        var instructorId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         model.InstructorUserName = User.FindFirst(ClaimTypes.GivenName).Value;
+        model.InstructorId = int.Parse(instructorId);
         var result = await _unitOfWork.ExamService.CreateRandomExam(model);
         if (result.IsSuccess)
             return Ok(result.Data);
@@ -98,7 +97,7 @@ public class ExamsController : ControllerBase
         }
         return BadRequest(result);
     }
-    [HttpPost("take-quiz")]
+    [HttpPut("take-quiz")]
     public async Task<ActionResult<ResponseViewModel<int>>> TakeQuiz([FromBody] TakeQuizViewModel model)
     {
         if (!ModelState.IsValid)

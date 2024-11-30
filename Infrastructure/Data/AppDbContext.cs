@@ -10,6 +10,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     {
     }
     public DbSet<AppUser> AppUsers { get; set; }
+
     public DbSet<Student> Students { get; set; }
     public DbSet<Instructor> Instructors { get; set; }
     public DbSet<CourseInstructor> CourseInstructors { get; set; }
@@ -27,6 +28,8 @@ public class AppDbContext : IdentityDbContext<AppUser>
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        //builder.ApplyConfiguration(new StudentConfig());
+        //builder.ApplyConfiguration(new InstructorConfig());
 
         builder.Entity<AppUser>()
             .HasOne(a => a.Instructor)
